@@ -161,16 +161,8 @@ class Manipulation(Domain):
 
 class Planner:
     def __init__(self):
-        self.openai_api_keys = self.load_openai_keys()
         self.use_chatgpt = True
-
-    def load_openai_keys(self,):
-        openai_keys_file = os.path.join(os.getcwd(), "keys/openai_keys.txt")
-        with open(openai_keys_file, "r") as f:
-            context = f.read()
-        context_lines = context.strip().split('\n')
-        print(context_lines)
-        return context_lines
+        self.use_deepseek = False
 
     def create_llm_prompt(self, task_nl, domain_nl):
         # Baseline 1 (LLM-as-P): directly ask the LLM for plan
@@ -338,15 +330,18 @@ class Planner:
         result_text = ""
         while server_cnt < 10:
             try:
-                self.update_key()
                 if self.use_chatgpt: # currently, we will always use chatgpt
-                    @backoff.on_exception(backoff.expo, openai.error.RateLimitError)
+                    client = openai.OpenAI(
+                        api_key=os.getenv("OPENAI_API_KEY"), 
+                        base_url="https://api.bianxie.ai/v1"
+                    )
+                    @backoff.on_exception(backoff.expo, openai.RateLimitError)
                     def completions_with_backoff(**kwargs):
-                        return openai.ChatCompletion.create(**kwargs)
+                        return client.chat.completions.create(**kwargs)
 
                     # response = openai.ChatCompletion.create(
                     response = completions_with_backoff(
-                        model="gpt-4",
+                        model="gpt-4.1-mini",
                         temperature=0.0,
                         top_p=1,
                         frequency_penalty=0,
@@ -356,7 +351,7 @@ class Planner:
                             {"role": "user", "content": prompt_text},
                         ],
                     )
-                    result_text = response['choices'][0]['message']['content']
+                    result_text = response.choices[0].message.content
                 else:
                     response =  openai.Completion.create(
                         model="text-davinci-003",
@@ -375,20 +370,13 @@ class Planner:
                 server_cnt += 1
                 print(e)
         return result_text
-
-    def update_key(self):
-        curr_key = self.openai_api_keys[0]
-        openai.api_key = curr_key
-        self.openai_api_keys.remove(curr_key)
-        self.openai_api_keys.append(curr_key)
-
+    
     def parse_result(self, pddl_string):
         # remove extra texts
-        #try:
-        #    beg = pddl_string.find("```") + 3
-        #    pddl_string = pddl_string[beg: beg + pddl_string[beg:].find("```")]
-        #except:
-        #    raise Exception("[error] cannot find ```pddl-file``` in the pddl string")
+        try:
+           pddl_string = pddl_string.replace("```",'').replace("pddl",'').replace("lisp",'')
+        except:
+           raise Exception("[error] cannot find ```pddl-file``` in the pddl string")
 
         # remove comments, they can cause error
         #t0 = time.time()
@@ -469,7 +457,7 @@ def llm_ic_pddl_planner(args, planner, domain):
     # D. collect the least cost plan
     best_cost = 1e10
     best_plan = None
-    for fn in glob.glob(f"{plan_file_name}.*"):
+    for fn in glob.glob(plan_file_name):
         with open(fn, "r") as f:
             plans = f.readlines()
             cost = get_cost(plans[-1])
