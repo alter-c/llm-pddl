@@ -9,8 +9,8 @@ import backoff
 
 import openai
 
-# FAST_DOWNWARD_ALIAS = "lama"
-FAST_DOWNWARD_ALIAS = "seq-opt-fdss-1"
+FAST_DOWNWARD_ALIAS = "lama-first"
+# FAST_DOWNWARD_ALIAS = "seq-opt-fdss-1"
 
 def postprocess(x):
     return x.strip()
@@ -160,9 +160,10 @@ class Manipulation(Domain):
 
 
 class Planner:
-    def __init__(self):
-        self.use_chatgpt = True
-        self.use_deepseek = False
+    def __init__(self, model="deepseek"):
+        self.available_models = ["openai", "deepseek"]
+        self.model = model
+        assert self.model in self.available_models, f"{self.model} is not in {self.available_models}"
 
     def create_llm_prompt(self, task_nl, domain_nl):
         # Baseline 1 (LLM-as-P): directly ask the LLM for plan
@@ -330,7 +331,7 @@ class Planner:
         result_text = ""
         while server_cnt < 10:
             try:
-                if self.use_chatgpt: # currently, we will always use chatgpt
+                if self.model == "openai": # currently, we will always use chatgpt
                     client = openai.OpenAI(
                         api_key=os.getenv("OPENAI_API_KEY"), 
                         base_url="https://api.bianxie.ai/v1"
@@ -341,7 +342,29 @@ class Planner:
 
                     # response = openai.ChatCompletion.create(
                     response = completions_with_backoff(
-                        model="gpt-4.1-mini",
+                        model="gpt-5.1",
+                        temperature=0.0,
+                        top_p=1,
+                        frequency_penalty=0,
+                        presence_penalty=0,
+                        messages=[
+                            {"role": "system", "content": "You are a helpful assistant."},
+                            {"role": "user", "content": prompt_text},
+                        ],
+                    )
+                    result_text = response.choices[0].message.content
+                elif self.model == "deepseek":
+                    client = openai.OpenAI(
+                        api_key=os.getenv("DEEPSEEK_API_KEY"), 
+                        base_url="https://api.deepseek.com"
+                    )
+                    @backoff.on_exception(backoff.expo, openai.RateLimitError)
+                    def completions_with_backoff(**kwargs):
+                        return client.chat.completions.create(**kwargs)
+
+                    # response = openai.ChatCompletion.create(
+                    response = completions_with_backoff(
+                        model="deepseek-v4-flash",
                         temperature=0.0,
                         top_p=1,
                         frequency_penalty=0,
@@ -353,16 +376,7 @@ class Planner:
                     )
                     result_text = response.choices[0].message.content
                 else:
-                    response =  openai.Completion.create(
-                        model="text-davinci-003",
-                        prompt=prompt_text,
-                        temperature=0.0,
-                        max_tokens=1024,
-                        top_p=1,
-                        frequency_penalty=0,
-                        presence_penalty=0
-                    )
-                    result_text = response['choices'][0]['text']
+                    raise ValueError(f"{self.model} model not supported.")
                 server_flag = 1
                 if server_flag:
                     break

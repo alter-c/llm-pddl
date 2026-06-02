@@ -11,3 +11,8 @@ clean.sh
 check.sh
 condor*
 keys
+
+# uv
+__pycache__/
+.python-version
+uv.lock

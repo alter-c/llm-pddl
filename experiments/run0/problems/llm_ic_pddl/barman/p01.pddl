@@ -1,4 +1,3 @@
-
 (define (problem prob)
  (:domain barman)
  (:objects 
