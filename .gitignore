@@ -17,3 +17,6 @@ __pycache__/
 .venv
 .python-version
 uv.lock
+
+# opencode
+.omo
