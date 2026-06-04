@@ -3,6 +3,8 @@ openai-quickstart-python
 data/openai_keys.txt
 sas_plan
 Condor*
+__pycache__/
+.pytest_cache/
 *.pyc
 downward
 openai-quickstart-node/
@@ -12,11 +14,12 @@ check.sh
 condor*
 keys
 
+
 # uv
-__pycache__/
 .venv
 .python-version
 uv.lock
 
 # opencode
 .omo
+session-*.md
