@@ -1,0 +1,38 @@
+(define (domain barman)
+  (:requirements :strips :typing)
+  (:types 
+		hand level beverage dispenser container - object
+		ingredient cocktail - beverage
+		shot shaker - container
+	)
+  (:predicates  
+    (ontable ?c)
+    (holding ?h ?c)
+    (handempty ?h)
+    (empty ?c)
+    (contains ?c ?b)
+    (clean ?c)
+    (used ?c ?b)
+    (dispenses ?d ?i)
+    (shaker-empty-level ?s ?l)
+    (shaker-level ?s ?l)
+    (next ?l1 ?l2)
+    (unshaked ?s)
+    (shaked ?s)
+    (cocktail-part1 ?c ?i)
+    (cocktail-part2 ?c ?i)
+	)
+		
+  (:action grasp)
+  (:action leave)
+  (:action fill-shot)
+  (:action refill-shot)
+  (:action empty-shot)
+  (:action clean-shot)
+  (:action pour-shot-to-clean-shaker)
+  (:action pour-shot-to-used-shaker)
+  (:action empty-shaker)
+  (:action clean-shaker)
+  (:action shake)
+  (:action pour-shaker-to-shot)
+)

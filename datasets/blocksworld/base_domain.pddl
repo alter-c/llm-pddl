@@ -1,0 +1,15 @@
+(define (domain blocksworld)
+  (:requirements :strips)
+  (:predicates
+    (clear ?x)
+    (on-table ?x)
+    (arm-empty)
+    (holding ?x)
+    (on ?x ?y)
+  )
+
+  (:action pickup)
+  (:action putdown)
+  (:action stack)
+  (:action unstack)
+)
