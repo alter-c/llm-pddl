@@ -9,5 +9,8 @@ dependencies = [
     "openai",
     "pytest",
     "pddl",
+    "langchain-core",
+    "langchain_openai",
+    "langgraph",
     "nvitop",
 ]
